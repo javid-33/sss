@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vim</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background: #000; /* پس‌زمینه سیاه */
+            color: white;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        #header {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        #score {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        #score img {
+            width: 40px;
+        }
+        #coin {
+            width: 250px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        #coin:active {
+            transform: scale(0.9);
+        }
+        #energy-bar {
+            width: 200px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px auto;
+        }
+        #energy-fill {
+            height: 100%;
+            background: #ffd700;
+            transition: width 0.3s;
+        }
+        #energy-text {
+            font-size: 18px;
+            color: #ffd700;
+            margin-top: 5px;
+        }
+        #tabs {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 0;
+            position: sticky;
+            bottom: 0;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .tab img {
+            width: 24px;
+        }
+        .tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        .floating-score {
+            position: absolute;
+            color: #ffd700;
+            font-size: 24px;
+            pointer-events: none;
+            animation: float 1s ease-out forwards;
+        }
+        @keyframes float {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+        #main-section, #frens-section, #earn-section, #boost-section, #trade-section {
+            display: none;
+        }
+        #main-section {
+            display: block;
+        }
+        #frens-section, #earn-section, #boost-section, #trade-section {
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+        }
+        .boost-btn, .task-btn, .frens-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #ffd700;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #1e3c72;
+        }
+        .boost-btn:disabled, .task-btn:disabled, .frens-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Vim</h1>
+    </div>
+    <div id="main-section">
+        <div id="score">
+            <img src="098.jpg" alt="Coin">
+            <span>0</span>
+        </div>
+        <img id="coin" src="098.jpg" alt="Vim">
+        <div id="energy-bar">
+            <div id="energy-fill" style="width: 100%;"></div>
+        </div>
+        <div id="energy-text">1302/1302</div>
+    </div>
+    <div id="frens-section">
+        <h2>Frens</h2>
+        <button class="frens-btn" onclick="inviteFriend()">دعوت دوست (5000 سکه)</button>
+    </div>
+    <div id="earn-section">
+        <h2>Earn</h2>
+        <button class="task-btn" onclick="completeTask('joinChannel')">جوین کانال (1000 سکه)</button>
+        <button class="task-btn" onclick="completeTask('watchVideo')">دیدن ویدیو (2000 سکه)</button>
+    </div>
+    <div id="boost-section">
+        <h2>Boosts</h2>
+        <button class="boost-btn" id="multitap" onclick="activateBooster('multitap')">Multitap (500)</button>
+        <button class="boost-btn" id="energyLimit" onclick="activateBooster('energyLimit')">Energy Limit (1000)</button>
+        <button class="boost-btn" id="tapBot" onclick="activateBooster('tapBot')">Tap Bot (2000)</button>
+    </div>
+    <div id="trade-section">
+        <h2>Trade</h2>
+        <p>این بخش بعداً فعال می‌شه!</p>
+    </div>
+    <div id="tabs">
+        <div class="tab" onclick="showTab('frens')">
+            <img src="https://cdn-icons-png.flaticon.com/24/880/880594.png" alt="Frens">
+            <span>Frens</span>
+        </div>
+        <div class="tab" onclick="showTab('earn')">
+            <img src="https://cdn-icons-png.flaticon.com/24/616/616490.png" alt="Earn">
+            <span>Earn</span>
+        </div>
+        <div class="tab active" onclick="showTab('main')">
+            <img src="https://cdn-icons-png.flaticon.com/24/545/545674.png" alt="Boosts">
+            <span>Boosts</span>
+        </div>
+        <div class="tab" onclick="showTab('trade')">
+            <img src="https://cdn-icons-png.flaticon.com/24/3161/3161350.png" alt="Trade">
+            <span>Trade</span>
+        </div>
+    </div>
+
+    <!-- اضافه کردن فایل صوتی -->
+    <audio id="tapSound" src="432.mp3"></audio>
+
+    <script>
+        let score = 0;
+        let energy = 1302;
+        let maxEnergy = 1302;
+        let multitapLevel = 1;
+        let boosters = {
+            multitap: { level: 1, cost: 500, duration: 20, active: false, endTime: 0 },
+            energyLimit: { level: 1, cost: 1000, duration: 0, active: false, endTime: 0 },
+            tapBot: { level: 1, cost: 2000, duration: 60, active: false, endTime: 0 }
+        };
+        let tasks = {
+            joinChannel: { reward: 1000, completed: false },
+            watchVideo: { reward: 2000, completed: false }
+        };
+
+        const coin = document.getElementById('coin');
+        const scoreDisplay = document.getElementById('score').querySelector('span');
+        const energyFill = document.getElementById('energy-fill');
+        const energyText = document.getElementById('energy-text');
+        const tapSound = document.getElementById('tapSound');
+
+        // تپ کردن
+        coin.addEventListener('click', (e) => {
+            if (energy >= multitapLevel) {
+                let points = boosters.multitap.active ? multitapLevel * boosters.multitap.level : 1;
+                score += points;
+                energy -= points; // هر امتیاز ۱ انرژی مصرف می‌کنه
+                updateDisplay();
+                showFloatingScore(points, e.clientX, e.clientY);
+                // پخش صدا
+                tapSound.currentTime = 0; // ریست کردن صدا برای پخش دوباره
+                tapSound.play().catch(error => {
+                    console.log("خطا در پخش صدا: ", error);
+                });
+            }
+        });
+
+        // به‌روز‌رسانی نمایش
+        function updateDisplay() {
+            scoreDisplay.innerText = score.toLocaleString();
+            energyText.innerText = `${energy}/${maxEnergy}`;
+            energyFill.style.width = `${(energy / maxEnergy) * 100}%`;
+            coin.style.opacity = energy <= 0 ? '0.5' : '1';
+        }
+
+        // امتیاز شناور
+        function showFloatingScore(points, x, y) {
+            let float = document.createElement('div');
+            float.className = 'floating-score';
+            float.innerText = `+${points}`;
+            float.style.left = `${x}px`;
+            float.style.top = `${y - 20}px`;
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1000);
+        }
+
+        // شارژ انرژی (هر 3 ثانیه 1 واحد، دقیقاً مثل نات‌کوین)
+        setInterval(() => {
+            if (energy < maxEnergy) {
+                energy += 1;
+                if (energy > maxEnergy) energy = maxEnergy;
+                updateDisplay();
+            }
+        }, 3000);
+
+        // فعال کردن بوسترها
+        function activateBooster(type) {
+            let booster = boosters[type];
+            if (booster.active || score < booster.cost) return;
+            score -= booster.cost;
+            booster.active = true;
+            booster.endTime = Date.now() + booster.duration * 1000;
+            document.getElementById(type).disabled = true;
+
+            if (type === 'energyLimit') {
+                maxEnergy += 1000 * booster.level;
+                energy += 1000 * booster.level;
+                booster.active = false;
+                booster.level += 1;
+                booster.cost += 1000;
+                setTimeout(() => {
+                    document.getElementById(type).innerText = `Energy Limit (${booster.cost})`;
+                    document.getElementById(type).disabled = false;
+                }, 60000);
+            } else if (type === 'multitap') {
+                multitapLevel = booster.level;
+                booster.level += 1;
+                booster.cost += 500;
+            } else if (type === 'tapBot') {
+                let botInterval = setInterval(() => {
+                    if (booster.active && energy >= 1) {
+                        let points = boosters.multitap.active ? multitapLevel * boosters.multitap.level : 1;
+                        score += points;
+                        energy -= points;
+                        updateDisplay();
+                        showFloatingScore(points, coin.offsetLeft + 125, coin.offsetTop + 125);
+                        tapSound.currentTime = 0;
+                        tapSound.play().catch(error => {
+                            console.log("خطا در پخش صدا: ", error);
+                        });
+                    }
+                }, 100);
+                setTimeout(() => clearInterval(botInterval), booster.duration * 1000);
+            }
+            updateDisplay();
+            checkBoosters();
+        }
+
+        // دعوت دوستان
+        function inviteFriend() {
+            score += 5000;
+            updateDisplay();
+            alert('دوست دعوت شد! 5000 سکه گرفتی.');
+            document.querySelector('#frens-section button').disabled = true;
+        }
+
+        // انجام مأموریت‌ها
+        function completeTask(taskId) {
+            if (tasks[taskId].completed) return;
+            tasks[taskId].completed = true;
+            score += tasks[taskId].reward;
+            updateDisplay();
+            alert(`مأموریت انجام شد! ${tasks[taskId].reward} سکه گرفتی.`);
+            document.querySelector(`#earn-section button[onclick="completeTask('${taskId}')"]`).disabled = true;
+        }
+
+        // چک کردن بوسترها
+        function checkBoosters() {
+            for (let type in boosters) {
+                let booster = boosters[type];
+                if (booster.active && Date.now() >= booster.endTime) {
+                    booster.active = false;
+                    document.getElementById(type).innerText = `${type === 'multitap' ? 'Multitap' : type === 'energyLimit' ? 'Energy Limit' : 'Tap Bot'} (${booster.cost})`;
+                    document.getElementById(type).disabled = false;
+                }
+            }
+            requestAnimationFrame(checkBoosters);
+        }
+
+        // تعویض تب‌ها
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add('active');
+            document.getElementById('main-section').style.display = tab === 'main' ? 'block' : 'none';
+            document.getElementById('frens-section').style.display = tab === 'frens' ? 'block' : 'none';
+            document.getElementById('earn-section').style.display = tab === 'earn' ? 'block' : 'none';
+            document.getElementById('boost-section').style.display = tab === 'boosts' ? 'block' : 'none';
+            document.getElementById('trade-section').style.display = tab === 'trade' ? 'block' : 'none';
+        }
+
+        checkBoosters();
+    </script>
+</body>
+</html>
